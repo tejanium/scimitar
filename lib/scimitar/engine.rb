@@ -11,9 +11,14 @@ module Scimitar
 
     Mime::Type.register 'application/scim+json', :scim
 
-    ActionDispatch::Request.parameter_parsers[Mime::Type.lookup('application/scim+json').symbol] = lambda do |body|
-      JSON.parse(body)
-    end
+    # Rails 8.2 freezes ActionDispatch::Request.parameter_parsers, so it can
+    # no longer be mutated in place; assign a merged copy instead, which is
+    # the documented way and works on every Rails version Scimitar supports.
+    ActionDispatch::Request.parameter_parsers = ActionDispatch::Request.parameter_parsers.merge(
+      Mime::Type.lookup('application/scim+json').symbol => lambda do |body|
+        JSON.parse(body)
+      end
+    )
 
     # Return an Array of all supported default and custom resource classes.
     # See also :add_custom_resource and :set_default_resources.
